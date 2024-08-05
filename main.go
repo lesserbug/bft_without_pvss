@@ -7,12 +7,6 @@ import (
 )
 
 func main() {
-	// nodes := []Node{
-	// 	{ID: 1, Address: "localhost:8001", Nodes: []Node{}, VRFValues: make(map[int][]byte)},
-	// 	{ID: 2, Address: "localhost:8002", Nodes: []Node{}, VRFValues: make(map[int][]byte)},
-	// 	{ID: 3, Address: "localhost:8003", Nodes: []Node{}, VRFValues: make(map[int][]byte)},
-	// }
-
 	// generateAndSaveKeys(1)
 	// generateAndSaveKeys(2)
 	// generateAndSaveKeys(3)
@@ -23,47 +17,12 @@ func main() {
 	// generateAndSaveBLSKeys(2)
 	// generateAndSaveBLSKeys(3)
 
-	// for i := range nodes {
-	// 	for j := range nodes {
-	// 		if i != j {
-	// 			nodes[i].Nodes = append(nodes[i].Nodes, nodes[j])
-	// 		}
-	// 	}
-	// }
-
-	// // Start listening on each node in a separate goroutine
-	// for i := range nodes {
-	// 	go func(n *Node) {
-	// 		n.Listen()
-	// 	}(&nodes[i])
-	// }
-
-	// // Allow some time for all nodes to start listening
-	// time.Sleep(2 * time.Second)
-
-	// // Simultaneously start the proposal phase for each node
-	// for i := range nodes {
-	// 	go func(n *Node) {
-	// 		n.SendProposal()
-	// 	}(&nodes[i])
-	// }
-
-	// log.Println("Simulation running. Press CTRL+C to stop.")
-	// select {} // Keep the program running indefinitely to observe node interactions
 	sleepyBFTInstances := []*SleepyBFT{
-		NewSleepyBFT(1, "localhost:8001"),
-		NewSleepyBFT(2, "localhost:8002"),
+		// NewSleepyBFT(1, "localhost:8001"),
+		NewSleepyBFT(1, "3.107.58.63:8001"),
+		NewSleepyBFT(2, "3.107.58.63:8002"),
 		NewSleepyBFT(3, "localhost:8003"),
 	}
-
-	// // Link the nodes with each other
-	// for i := range sleepyBFTInstances {
-	// 	for j := range sleepyBFTInstances {
-	// 		if i != j {
-	// 			sleepyBFTInstances[i].Nodes = append(sleepyBFTInstances[i].Nodes, sleepyBFTInstances[j].node)
-	// 		}
-	// 	}
-	// }
 
 	// Initialize PVSS public keys for each node
 	for _, instance := range sleepyBFTInstances {
