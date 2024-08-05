@@ -44,16 +44,16 @@ func (sbft *SleepyBFT) HandleMessage(msg Message) {
 
 // HandleProposal adapted for SleepyBFT
 func (sbft *SleepyBFT) HandleProposal(msg Message) {
-	sbft.mutex.Lock()
-	if sbft.State.SleepyNodes[msg.SenderID] {
-		sbft.mutex.Unlock()
-		fmt.Println("Ignoring message from sleepy node", msg.SenderID)
-		return
-	}
-	if timer, ok := sbft.State.NodeTimers[msg.SenderID]; ok && timer != nil {
-		timer.Stop()
-	}
-	sbft.mutex.Unlock()
+	// sbft.mutex.Lock()
+	// if sbft.State.SleepyNodes[msg.SenderID] {
+	// 	sbft.mutex.Unlock()
+	// 	fmt.Println("Ignoring message from sleepy node", msg.SenderID)
+	// 	return
+	// }
+	// if timer, ok := sbft.State.NodeTimers[msg.SenderID]; ok && timer != nil {
+	// 	timer.Stop()
+	// }
+	// sbft.mutex.Unlock()
 
 	// Find the public key by iterating over the Nodes slice
 	var proposalPublicKey ed25519.PublicKey
@@ -135,10 +135,12 @@ func (sbft *SleepyBFT) HandleProposal(msg Message) {
 		fmt.Println("Node", sbft.node.ID, "determines Leader is Node:", leaderID)
 		// sbft.broadcastLeaderShare(leaderID, sbft.Shares[leaderID], sbft.ShareIndex[leaderID])
 
-		time.AfterFunc(2*time.Second, func() {
-			sbft.broadcastLeaderShare(leaderID)
-			sbft.ShareSent = true
-		})
+		// time.AfterFunc(2*time.Second, func() {
+		// 	sbft.broadcastLeaderShare(leaderID)
+		// 	sbft.ShareSent = true
+		// })
+		sbft.broadcastLeaderShare(leaderID)
+		sbft.ShareSent = true
 
 		// if sbft.node.ID == 1 { // 假设节点ID为1是Node1
 		// 	// 如果是Node1，则延迟5秒
@@ -156,25 +158,25 @@ func (sbft *SleepyBFT) HandleProposal(msg Message) {
 }
 
 func (sbft *SleepyBFT) broadcastLeaderShare(leaderID int) {
-	sbft.mutex.Lock()
-	sbft.State.CurrentPhase = 2
-	for _, timer := range sbft.State.VerificationTimers {
-		if timer != nil {
-			timer.Stop()
-		}
-	}
-	for _, node := range sbft.Nodes {
-		nodeID := node.ID // 创建一个局部变量的副本
-		if _, ok := sbft.State.VerificationTimers[nodeID]; !ok {
-			sbft.State.VerificationTimers[nodeID] = time.AfterFunc(2*time.Second, func() {
-				sbft.markVeriNodeAsSleepy(nodeID) // 使用副本，确保每个计时器的闭包中的 nodeID 是正确的
-			})
-		} else {
-			sbft.State.VerificationTimers[nodeID].Reset(2 * time.Second)
-		}
-	}
+	// sbft.mutex.Lock()
+	// sbft.State.CurrentPhase = 2
+	// for _, timer := range sbft.State.VerificationTimers {
+	// 	if timer != nil {
+	// 		timer.Stop()
+	// 	}
+	// }
+	// for _, node := range sbft.Nodes {
+	// 	nodeID := node.ID // 创建一个局部变量的副本
+	// 	if _, ok := sbft.State.VerificationTimers[nodeID]; !ok {
+	// 		sbft.State.VerificationTimers[nodeID] = time.AfterFunc(2*time.Second, func() {
+	// 			sbft.markVeriNodeAsSleepy(nodeID) // 使用副本，确保每个计时器的闭包中的 nodeID 是正确的
+	// 		})
+	// 	} else {
+	// 		sbft.State.VerificationTimers[nodeID].Reset(2 * time.Second)
+	// 	}
+	// }
 
-	sbft.mutex.Unlock()
+	// sbft.mutex.Unlock()
 
 	leaderShare := sbft.testLeaderShare[sbft.node.ID]
 	for _, node := range sbft.Nodes {
@@ -206,9 +208,9 @@ func (sbft *SleepyBFT) HandleVerification(msg Message) {
 		fmt.Println("Node", sbft.node.ID, "Ignoring message from sleepy node", msg.SenderID)
 		return
 	}
-	if timer, ok := sbft.State.VerificationTimers[msg.SenderID]; ok && timer != nil {
-		timer.Stop()
-	}
+	// if timer, ok := sbft.State.VerificationTimers[msg.SenderID]; ok && timer != nil {
+	// 	timer.Stop()
+	// }
 	sbft.mutex.Unlock()
 
 	var verificationData struct {
@@ -325,10 +327,12 @@ func (sbft *SleepyBFT) castVote(LeaderID int) {
 		SenderID: sbft.node.ID,
 	}
 
-	time.AfterFunc(2*time.Second, func() {
-		sbft.BroadcastMessage(voteMsg)
-		fmt.Println("Node", sbft.node.ID, "cast vote for block with Leader ID", LeaderID)
-	})
+	// time.AfterFunc(2*time.Second, func() {
+	// 	sbft.BroadcastMessage(voteMsg)
+	// 	fmt.Println("Node", sbft.node.ID, "cast vote for block with Leader ID", LeaderID)
+	// })
+	sbft.BroadcastMessage(voteMsg)
+	fmt.Println("Node", sbft.node.ID, "cast vote for block with Leader ID", LeaderID)
 	// fmt.Println("Node", sbft.node.ID, "EligibleNextRound:", sbft.EligibleNextRound)
 }
 
@@ -393,10 +397,10 @@ func (sbft *SleepyBFT) HandleVote(msg Message) {
 			if !sbft.ConfirmationSent {
 				sbft.ConfirmationSent = true
 				sbft.mutex.Unlock()
-				time.AfterFunc(2*time.Second, func() {
-					sbft.broadcastConfirmation(sbft.LeaderId)
-				})
-				// sbft.broadcastConfirmation(sbft.LeaderId)
+				// time.AfterFunc(2*time.Second, func() {
+				// 	sbft.broadcastConfirmation(sbft.LeaderId)
+				// })
+				sbft.broadcastConfirmation(sbft.LeaderId)
 			} else {
 				sbft.mutex.Unlock()
 			}

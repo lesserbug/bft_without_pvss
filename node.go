@@ -216,23 +216,23 @@ func (sbft *SleepyBFT) BroadcastMessage(msg Message) {
 func (sbft *SleepyBFT) SendProposal() {
 	sbft.mutex.Lock()
 	sbft.State.CurrentPhase = 1 // 1表示提议阶段
-	for _, timer := range sbft.State.NodeTimers {
-		if timer != nil {
-			timer.Stop()
-		}
-	}
-	for _, node := range sbft.Nodes {
-		if sbft.FinalEligibleNextRound[node.ID] {
-			nodeID := node.ID
-			if _, ok := sbft.State.NodeTimers[nodeID]; !ok {
-				sbft.State.NodeTimers[nodeID] = time.AfterFunc(2*time.Second, func() {
-					sbft.markNodeAsSleepy(nodeID)
-				})
-			} else {
-				sbft.State.NodeTimers[nodeID].Reset(2 * time.Second)
-			}
-		}
-	}
+	// for _, timer := range sbft.State.NodeTimers {
+	// 	if timer != nil {
+	// 		timer.Stop()
+	// 	}
+	// }
+	// for _, node := range sbft.Nodes {
+	// 	if sbft.FinalEligibleNextRound[node.ID] {
+	// 		nodeID := node.ID
+	// 		if _, ok := sbft.State.NodeTimers[nodeID]; !ok {
+	// 			sbft.State.NodeTimers[nodeID] = time.AfterFunc(2*time.Second, func() {
+	// 				sbft.markNodeAsSleepy(nodeID)
+	// 			})
+	// 		} else {
+	// 			sbft.State.NodeTimers[nodeID].Reset(2 * time.Second)
+	// 		}
+	// 	}
+	// }
 	sbft.mutex.Unlock()
 
 	timestamp := time.Now().Unix()
