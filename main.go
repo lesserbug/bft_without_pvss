@@ -22,46 +22,47 @@ func main() {
 		// NewSleepyBFT(1, "localhost:8001"),
 		// NewSleepyBFT(2, "localhost:8002"),
 		// NewSleepyBFT(3, "localhost:8003"),
-		NewSleepyBFT(1, "0.0.0.0:8001"),
-		NewSleepyBFT(2, "0.0.0.0:8002"),
 		NewSleepyBFT(3, "0.0.0.0:8003"),
 	}
 
-	// Initialize PVSS public keys for each node
-	for _, instance := range sleepyBFTInstances {
-		pvssPublicKey := getPVSSPublicKey(instance.node.ID)
-		instance.PVSSNodes = append(instance.PVSSNodes, PVSSNode{Index: instance.node.ID, PubKey: pvssPublicKey})
-	}
+	sleepyBFTInstances[0].Nodes = append(sleepyBFTInstances[0].Nodes, Node{ID: 1, Address: "52.63.80.98:8001"})
+	sleepyBFTInstances[0].Nodes = append(sleepyBFTInstances[0].Nodes, Node{ID: 2, Address: "52.63.80.98:8002"})
+	sleepyBFTInstances[0].PVSSNodes = append(sleepyBFTInstances[0].PVSSNodes, PVSSNode{Index: 1, PubKey: getPVSSPublicKey(1)})
+	sleepyBFTInstances[0].PVSSNodes = append(sleepyBFTInstances[0].PVSSNodes, PVSSNode{Index: 2, PubKey: getPVSSPublicKey(2)})
+	sleepyBFTInstances[0].PVSSNodes = append(sleepyBFTInstances[0].PVSSNodes, PVSSNode{Index: 3, PubKey: getPVSSPublicKey(3)})
+	sleepyBFTInstances[0].FinalEligibleNextRound[1] = true
+	sleepyBFTInstances[0].FinalEligibleNextRound[2] = true
+	sleepyBFTInstances[0].FinalEligibleNextRound[3] = true
+	sleepyBFTInstances[0].ProposalSent[1] = false
+	sleepyBFTInstances[0].ProposalSent[2] = false
+	sleepyBFTInstances[0].ProposalSent[3] = false
 
-	sleepyBFTInstances[0].Nodes = append(sleepyBFTInstances[0].Nodes, Node{ID: 2, Address: "3.107.58.63:8002"})    // EC2 Node 1 to EC2 Node 2
-	sleepyBFTInstances[0].Nodes = append(sleepyBFTInstances[0].Nodes, Node{ID: 3, Address: "131.170.239.18:8003"}) // EC2 Node 1 to Local Node
+	// // Initialize PVSS public keys for each node
+	// for _, instance := range sleepyBFTInstances {
+	// 	pvssPublicKey := getPVSSPublicKey(instance.node.ID)
+	// 	instance.PVSSNodes = append(instance.PVSSNodes, PVSSNode{Index: instance.node.ID, PubKey: pvssPublicKey})
+	// }
 
-	sleepyBFTInstances[1].Nodes = append(sleepyBFTInstances[1].Nodes, Node{ID: 1, Address: "3.107.58.63:8001"})    // EC2 Node 2 to EC2 Node 1
-	sleepyBFTInstances[1].Nodes = append(sleepyBFTInstances[1].Nodes, Node{ID: 3, Address: "131.170.239.18:8003"}) // EC2 Node 2 to Local Node
+	// // Link the nodes with each other
+	// for i, sbft := range sleepyBFTInstances {
+	// 	for j, otherSbft := range sleepyBFTInstances {
+	// 		if i != j {
+	// 			// sbft.Nodes = append(sbft.Nodes, otherSbft.node)
+	// 			// Add other node's PVSS node information as well
+	// 			sbft.PVSSNodes = append(sbft.PVSSNodes, PVSSNode{Index: otherSbft.node.ID, PubKey: otherSbft.PVSSNodes[0].PubKey})
+	// 		}
+	// 	}
+	// }
 
-	sleepyBFTInstances[2].Nodes = append(sleepyBFTInstances[2].Nodes, Node{ID: 1, Address: "3.107.58.63:8001"}) // Local Node to EC2 Node 1
-	sleepyBFTInstances[2].Nodes = append(sleepyBFTInstances[2].Nodes, Node{ID: 2, Address: "3.107.58.63:8002"}) // Local Node to EC2 Node 2
-
-	// Link the nodes with each other
-	for i, sbft := range sleepyBFTInstances {
-		for j, otherSbft := range sleepyBFTInstances {
-			if i != j {
-				// sbft.Nodes = append(sbft.Nodes, otherSbft.node)
-				// Add other node's PVSS node information as well
-				sbft.PVSSNodes = append(sbft.PVSSNodes, PVSSNode{Index: otherSbft.node.ID, PubKey: otherSbft.PVSSNodes[0].PubKey})
-			}
-		}
-	}
-
-	// Initialize FinalEligibleNextRound for each node
-	for _, sbft := range sleepyBFTInstances {
-		for _, node := range sbft.Nodes {
-			sbft.FinalEligibleNextRound[node.ID] = true
-			sbft.ProposalSent[node.ID] = false
-		}
-		sbft.FinalEligibleNextRound[sbft.node.ID] = true // Also mark self as eligible
-		sbft.ProposalSent[sbft.node.ID] = false
-	}
+	// // Initialize FinalEligibleNextRound for each node
+	// for _, sbft := range sleepyBFTInstances {
+	// 	for _, node := range sbft.Nodes {
+	// 		sbft.FinalEligibleNextRound[node.ID] = true
+	// 		sbft.ProposalSent[node.ID] = false
+	// 	}
+	// 	sbft.FinalEligibleNextRound[sbft.node.ID] = true // Also mark self as eligible
+	// 	sbft.ProposalSent[sbft.node.ID] = false
+	// }
 
 	// Start listening on each node in a separate goroutine
 	for _, sbft := range sleepyBFTInstances {

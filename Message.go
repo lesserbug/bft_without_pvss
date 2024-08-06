@@ -60,7 +60,8 @@ func (sbft *SleepyBFT) HandleProposal(msg Message) {
 	found := false
 	for _, node := range sbft.Nodes {
 		if node.ID == msg.SenderID {
-			proposalPublicKey = node.PublicKey
+			// proposalPublicKey = node.PublicKey
+			proposalPublicKey = getPubKey(node.ID)
 			found = true
 			break
 		}

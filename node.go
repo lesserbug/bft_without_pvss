@@ -245,6 +245,7 @@ func (sbft *SleepyBFT) SendProposal() {
 	}
 
 	sbft.VRFValues[sbft.node.ID] = vrfOutput
+	fmt.Println("Node", sbft.node.ID, "VRF output:", vrfOutput)
 
 	// block := []byte("Block Message: block_" + strconv.Itoa(sbft.node.ID) + strconv.Itoa(rand.Intn(100)) + "PrevHash: previous-block-hash previous-block-hash previous-block-hash previous-block-hash qsqidhqwioudgqwiushqioasdnqwuodg	qwuiSGB	QWLDGUI	DHSODHQIORHQOWHO	djwdsiofhqiohhhhhhhhhhhhhhhhhhhhhfcwdjoqihdqo")
 	block := Block{
