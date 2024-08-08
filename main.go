@@ -17,16 +17,12 @@ func main() {
 	// generateAndSaveBLSKeys(2)
 	// generateAndSaveBLSKeys(3)
 
-	// 131.170.239.18
 	sleepyBFTInstances := []*SleepyBFT{
-		// NewSleepyBFT(1, "localhost:8001"),
-		// NewSleepyBFT(2, "localhost:8002"),
-		// NewSleepyBFT(3, "localhost:8003"),
 		NewSleepyBFT(3, "0.0.0.0:8003"),
 	}
 
-	sleepyBFTInstances[0].Nodes = append(sleepyBFTInstances[0].Nodes, Node{ID: 1, Address: "52.63.80.98:8001"})
-	sleepyBFTInstances[0].Nodes = append(sleepyBFTInstances[0].Nodes, Node{ID: 2, Address: "52.63.80.98:8002"})
+	sleepyBFTInstances[0].Nodes = append(sleepyBFTInstances[0].Nodes, Node{ID: 1, Address: "3.104.74.7:8001"})
+	sleepyBFTInstances[0].Nodes = append(sleepyBFTInstances[0].Nodes, Node{ID: 2, Address: "3.104.74.7:8002"})
 	sleepyBFTInstances[0].PVSSNodes = append(sleepyBFTInstances[0].PVSSNodes, PVSSNode{Index: 1, PubKey: getPVSSPublicKey(1)})
 	sleepyBFTInstances[0].PVSSNodes = append(sleepyBFTInstances[0].PVSSNodes, PVSSNode{Index: 2, PubKey: getPVSSPublicKey(2)})
 	sleepyBFTInstances[0].PVSSNodes = append(sleepyBFTInstances[0].PVSSNodes, PVSSNode{Index: 3, PubKey: getPVSSPublicKey(3)})

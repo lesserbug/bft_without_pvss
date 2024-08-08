@@ -80,6 +80,7 @@ type SleepyBFT struct {
 	VotesCount                 map[int]int
 	VotesConfirmed             map[int]bool
 	ProposalSent               map[int]bool
+	selfProposalSent bool
 	ShareSent                  bool
 	VoteSent                   bool
 	ConfirmationSent           bool
@@ -96,6 +97,10 @@ type SleepyBFT struct {
 	AggregatedNodes            []int          // 存储参与聚合的节点ID
 	confirmationList           map[int]int
 	mutex                      sync.Mutex
+	proposalCache []Message
+	verificationCache   []Message
+        voteCache           []Message
+        confirmationCache   []Message
 }
 
 func NewSleepyBFT(nodeID int, addr string) *SleepyBFT {
@@ -116,6 +121,7 @@ func NewSleepyBFT(nodeID int, addr string) *SleepyBFT {
 	b.VotesCount = make(map[int]int)
 	b.VotesConfirmed = make(map[int]bool)
 	b.ProposalSent = make(map[int]bool)
+	b.selfProposalSent = false
 	b.ShareSent = false
 	b.VoteSent = false
 	b.ConfirmationSent = false
@@ -148,6 +154,11 @@ func NewSleepyBFT(nodeID int, addr string) *SleepyBFT {
 	for _, node := range b.Nodes {
 		b.State.InactiveNodeCounts[node.ID] = 0
 	}
+
+	b.proposalCache = make([]Message, 0)
+	b.verificationCache = make([]Message, 0)
+        b.voteCache = make([]Message, 0)
+        b.confirmationCache = make([]Message, 0)
 
 	return b
 }
@@ -214,8 +225,8 @@ func (sbft *SleepyBFT) BroadcastMessage(msg Message) {
 }
 
 func (sbft *SleepyBFT) SendProposal() {
-	sbft.mutex.Lock()
-	sbft.State.CurrentPhase = 1 // 1表示提议阶段
+	// sbft.mutex.Lock()
+	// sbft.State.CurrentPhase = 1 // 1表示提议阶段
 	// for _, timer := range sbft.State.NodeTimers {
 	// 	if timer != nil {
 	// 		timer.Stop()
@@ -233,7 +244,7 @@ func (sbft *SleepyBFT) SendProposal() {
 	// 		}
 	// 	}
 	// }
-	sbft.mutex.Unlock()
+	// sbft.mutex.Unlock()
 
 	timestamp := time.Now().Unix()
 	vrfMessage := []byte(strconv.Itoa(sbft.node.ID) + strconv.Itoa(int(timestamp)) + strconv.Itoa(rand.Intn(100)))
@@ -245,7 +256,7 @@ func (sbft *SleepyBFT) SendProposal() {
 	}
 
 	sbft.VRFValues[sbft.node.ID] = vrfOutput
-	fmt.Println("Node", sbft.node.ID, "VRF output:", vrfOutput)
+	// fmt.Println("Self Node", sbft.node.ID,"store VRF output:", sbft.VRFValues)
 
 	// block := []byte("Block Message: block_" + strconv.Itoa(sbft.node.ID) + strconv.Itoa(rand.Intn(100)) + "PrevHash: previous-block-hash previous-block-hash previous-block-hash previous-block-hash qsqidhqwioudgqwiushqioasdnqwuodg	qwuiSGB	QWLDGUI	DHSODHQIORHQOWHO	djwdsiofhqiohhhhhhhhhhhhhhhhhhhhhfcwdjoqihdqo")
 	block := Block{
@@ -361,10 +372,20 @@ func (sbft *SleepyBFT) SendProposal() {
 			}
 
 			sbft.SendMessage(node.Address, msg)
+			fmt.Println("Node", sbft.node.ID, "send proposal to", node.ID)
 			sbft.ProposalSent[node.ID] = true
 		}
 	}
+	sbft.selfProposalSent = true
 
+	// sbft.mutex.Lock()
+	fmt.Println("Node", sbft.node.ID, "begin handle cache proposal message")
+	for _, cachedMsg := range sbft.proposalCache {
+		// fmt.Println(cachedMsg.SenderID)
+		sbft.HandleProposal(cachedMsg) // 处理每一个缓存的提案
+	}
+	sbft.proposalCache = nil // 清空缓存
+	// sbft.mutex.Unlock()
 }
 
 func (sbft *SleepyBFT) markNodeAsSleepy(nodeID int) {
