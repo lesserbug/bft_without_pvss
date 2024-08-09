@@ -44,7 +44,6 @@ func (sbft *SleepyBFT) HandleMessage(msg Message) {
 
 // HandleProposal adapted for SleepyBFT
 func (sbft *SleepyBFT) HandleProposal(msg Message) {
-	// sbft.mutex.Lock()
 	if !sbft.selfProposalSent {
 		// 如果还没有发送提案，先缓存这个消息
 		sbft.proposalCache = append(sbft.proposalCache, msg)
@@ -53,17 +52,13 @@ func (sbft *SleepyBFT) HandleProposal(msg Message) {
 		return
 	}
 
-	// sbft.mutex.Unlock()
-	// sbft.mutex.Lock()
-	// if sbft.State.SleepyNodes[msg.SenderID] {
-	// 	sbft.mutex.Unlock()
-	// 	fmt.Println("Ignoring message from sleepy node", msg.SenderID)
-	// 	return
-	// }
-	// if timer, ok := sbft.State.NodeTimers[msg.SenderID]; ok && timer != nil {
-	// 	timer.Stop()
-	// }
-	// sbft.mutex.Unlock()
+	if sbft.State.SleepyNodes[msg.SenderID] {
+		fmt.Println("Ignoring message from sleepy node", msg.SenderID)
+		return
+	}
+	if timer, ok := sbft.State.NodeTimers[msg.SenderID]; ok && timer != nil {
+		timer.Stop()
+	}
 
 	// Find the public key by iterating over the Nodes slice
 	var proposalPublicKey ed25519.PublicKey
@@ -144,12 +139,11 @@ func (sbft *SleepyBFT) HandleProposal(msg Message) {
 		fmt.Println("Node", sbft.node.ID, "determines Leader is Node:", leaderID)
 		// sbft.broadcastLeaderShare(leaderID, sbft.Shares[leaderID], sbft.ShareIndex[leaderID])
 
-		// time.AfterFunc(2*time.Second, func() {
-		// 	sbft.broadcastLeaderShare(leaderID)
-		// 	sbft.ShareSent = true
-		// })
-		sbft.broadcastLeaderShare(leaderID)
-		// sbft.ShareSent = true
+		time.AfterFunc(time.Second, func() {
+			sbft.broadcastLeaderShare(leaderID)
+		})
+
+		// sbft.broadcastLeaderShare(leaderID)
 
 		// if sbft.node.ID == 1 { // 假设节点ID为1是Node1
 		// 	// 如果是Node1，则延迟5秒
@@ -167,25 +161,22 @@ func (sbft *SleepyBFT) HandleProposal(msg Message) {
 }
 
 func (sbft *SleepyBFT) broadcastLeaderShare(leaderID int) {
-	// sbft.mutex.Lock()
-	// sbft.State.CurrentPhase = 2
-	// for _, timer := range sbft.State.VerificationTimers {
-	// 	if timer != nil {
-	// 		timer.Stop()
-	// 	}
-	// }
-	// for _, node := range sbft.Nodes {
-	// 	nodeID := node.ID // 创建一个局部变量的副本
-	// 	if _, ok := sbft.State.VerificationTimers[nodeID]; !ok {
-	// 		sbft.State.VerificationTimers[nodeID] = time.AfterFunc(2*time.Second, func() {
-	// 			sbft.markVeriNodeAsSleepy(nodeID) // 使用副本，确保每个计时器的闭包中的 nodeID 是正确的
-	// 		})
-	// 	} else {
-	// 		sbft.State.VerificationTimers[nodeID].Reset(2 * time.Second)
-	// 	}
-	// }
-
-	// sbft.mutex.Unlock()
+	sbft.State.CurrentPhase = 2
+	for _, timer := range sbft.State.VerificationTimers {
+		if timer != nil {
+			timer.Stop()
+		}
+	}
+	for _, node := range sbft.Nodes {
+		nodeID := node.ID // 创建一个局部变量的副本
+		if _, ok := sbft.State.VerificationTimers[nodeID]; !ok {
+			sbft.State.VerificationTimers[nodeID] = time.AfterFunc(time.Second, func() {
+				sbft.markVeriNodeAsSleepy(nodeID) // 使用副本，确保每个计时器的闭包中的 nodeID 是正确的
+			})
+		} else {
+			sbft.State.VerificationTimers[nodeID].Reset(time.Second)
+		}
+	}
 
 	leaderShare := sbft.testLeaderShare[sbft.node.ID]
 	for _, node := range sbft.Nodes {
@@ -208,19 +199,27 @@ func (sbft *SleepyBFT) broadcastLeaderShare(leaderID int) {
 			})
 		}
 	}
-	sbft.ShareSent = true  // 标记分享已发送
-    for _, cachedMsg := range sbft.verificationCache {
-        sbft.HandleVerification(cachedMsg)  // 处理缓存的验证消息
-    }
-    sbft.verificationCache = nil  // 清空缓存
+	sbft.ShareSent = true // 标记分享已发送
+	for _, cachedMsg := range sbft.verificationCache {
+		sbft.HandleVerification(cachedMsg) // 处理缓存的验证消息
+	}
+	sbft.verificationCache = nil // 清空缓存
 }
 
 func (sbft *SleepyBFT) HandleVerification(msg Message) {
-	 if !sbft.ShareSent {
-                sbft.verificationCache = append(sbft.verificationCache, msg)
-                fmt.Println("Node", sbft.node.ID, "Caching verification message from Node", msg.SenderID)
-                return
-        }
+	if sbft.State.SleepyNodes[msg.SenderID] {
+		fmt.Println("Ignoring message from sleepy node", msg.SenderID)
+		return
+	}
+	if timer, ok := sbft.State.VerificationTimers[msg.SenderID]; ok && timer != nil {
+		timer.Stop()
+	}
+
+	if !sbft.ShareSent {
+		sbft.verificationCache = append(sbft.verificationCache, msg)
+		fmt.Println("Node", sbft.node.ID, "Caching verification message from Node", msg.SenderID)
+		return
+	}
 
 	var verificationData struct {
 		LeaderID    int
@@ -297,7 +296,12 @@ func (sbft *SleepyBFT) HandleVerification(msg Message) {
 			}
 		}
 		// fmt.Println("Node", sbft.node.ID, "NextRoundCommitCount:", sbft.NextRoundCommitCount)
-		sbft.castVote(verificationData.LeaderID)
+
+		time.AfterFunc(time.Second, func() {
+			sbft.castVote(verificationData.LeaderID)
+		})
+
+		// sbft.castVote(verificationData.LeaderID)
 	}
 
 }
@@ -341,18 +345,18 @@ func (sbft *SleepyBFT) castVote(LeaderID int) {
 	fmt.Println("Node", sbft.node.ID, "cast vote for block with Leader ID", LeaderID)
 	// fmt.Println("Node", sbft.node.ID, "EligibleNextRound:", sbft.EligibleNextRound)
 	sbft.VoteSent = true
-        for _, cachedMsg := range sbft.voteCache {
-                sbft.HandleVote(cachedMsg)  // 处理缓存的投票消息
-        }
-        sbft.voteCache = nil 
+	for _, cachedMsg := range sbft.voteCache {
+		sbft.HandleVote(cachedMsg) // 处理缓存的投票消息
+	}
+	sbft.voteCache = nil
 }
 
 func (sbft *SleepyBFT) HandleVote(msg Message) {
 	if !sbft.VoteSent {
-                sbft.voteCache = append(sbft.voteCache, msg)
-                fmt.Println("Caching vote message from Node", msg.SenderID)
-                return
-        }
+		sbft.voteCache = append(sbft.voteCache, msg)
+		fmt.Println("Caching vote message from Node", msg.SenderID)
+		return
+	}
 
 	blsPublickey := getBLSPublicKey(msg.SenderID)
 	var augScheme bls.AugSchemeMPL
@@ -404,15 +408,14 @@ func (sbft *SleepyBFT) HandleVote(msg Message) {
 				return
 			}
 
-			// sbft.mutex.Lock()
 			sbft.AggregatedSignature = aggregatedSignature
 			if !sbft.ConfirmationSent {
-				// sbft.ConfirmationSent = true
-				// sbft.mutex.Unlock()
-				// time.AfterFunc(2*time.Second, func() {
-				// 	sbft.broadcastConfirmation(sbft.LeaderId)
-				// })
-				sbft.broadcastConfirmation(sbft.LeaderId)
+
+				time.AfterFunc(time.Second, func() {
+					sbft.broadcastConfirmation(sbft.LeaderId)
+				})
+
+				// sbft.broadcastConfirmation(sbft.LeaderId)
 			}
 
 		}
@@ -443,10 +446,10 @@ func (sbft *SleepyBFT) broadcastConfirmation(leaderID int) {
 		}
 	}
 	sbft.ConfirmationSent = true
-        for _, cachedMsg := range sbft.confirmationCache {
-                sbft.HandleConfirmation(cachedMsg)  // 处理缓存的确认消息
-        }
-        sbft.confirmationCache = nil  // 清空缓存
+	for _, cachedMsg := range sbft.confirmationCache {
+		sbft.HandleConfirmation(cachedMsg) // 处理缓存的确认消息
+	}
+	sbft.confirmationCache = nil // 清空缓存
 }
 
 // HandleConfirmation adapted for SleepyBFT (implementation needed)
@@ -457,10 +460,10 @@ func (sbft *SleepyBFT) HandleConfirmation(msg Message) {
 	}
 
 	if !sbft.ConfirmationSent {
-            sbft.confirmationCache = append(sbft.confirmationCache, msg)
-                fmt.Println("Caching confirmation message from Node", msg.SenderID)
-                return
-        }
+		sbft.confirmationCache = append(sbft.confirmationCache, msg)
+		fmt.Println("Caching confirmation message from Node", msg.SenderID)
+		return
+	}
 
 	var confirmationData struct {
 		LeaderID            int

@@ -80,7 +80,7 @@ type SleepyBFT struct {
 	VotesCount                 map[int]int
 	VotesConfirmed             map[int]bool
 	ProposalSent               map[int]bool
-	selfProposalSent bool
+	selfProposalSent           bool
 	ShareSent                  bool
 	VoteSent                   bool
 	ConfirmationSent           bool
@@ -97,10 +97,10 @@ type SleepyBFT struct {
 	AggregatedNodes            []int          // 存储参与聚合的节点ID
 	confirmationList           map[int]int
 	mutex                      sync.Mutex
-	proposalCache []Message
-	verificationCache   []Message
-        voteCache           []Message
-        confirmationCache   []Message
+	proposalCache              []Message
+	verificationCache          []Message
+	voteCache                  []Message
+	confirmationCache          []Message
 }
 
 func NewSleepyBFT(nodeID int, addr string) *SleepyBFT {
@@ -157,8 +157,8 @@ func NewSleepyBFT(nodeID int, addr string) *SleepyBFT {
 
 	b.proposalCache = make([]Message, 0)
 	b.verificationCache = make([]Message, 0)
-        b.voteCache = make([]Message, 0)
-        b.confirmationCache = make([]Message, 0)
+	b.voteCache = make([]Message, 0)
+	b.confirmationCache = make([]Message, 0)
 
 	return b
 }
@@ -225,26 +225,24 @@ func (sbft *SleepyBFT) BroadcastMessage(msg Message) {
 }
 
 func (sbft *SleepyBFT) SendProposal() {
-	// sbft.mutex.Lock()
-	// sbft.State.CurrentPhase = 1 // 1表示提议阶段
-	// for _, timer := range sbft.State.NodeTimers {
-	// 	if timer != nil {
-	// 		timer.Stop()
-	// 	}
-	// }
-	// for _, node := range sbft.Nodes {
-	// 	if sbft.FinalEligibleNextRound[node.ID] {
-	// 		nodeID := node.ID
-	// 		if _, ok := sbft.State.NodeTimers[nodeID]; !ok {
-	// 			sbft.State.NodeTimers[nodeID] = time.AfterFunc(2*time.Second, func() {
-	// 				sbft.markNodeAsSleepy(nodeID)
-	// 			})
-	// 		} else {
-	// 			sbft.State.NodeTimers[nodeID].Reset(2 * time.Second)
-	// 		}
-	// 	}
-	// }
-	// sbft.mutex.Unlock()
+	sbft.State.CurrentPhase = 1 // 1表示提议阶段
+	for _, timer := range sbft.State.NodeTimers {
+		if timer != nil {
+			timer.Stop()
+		}
+	}
+	for _, node := range sbft.Nodes {
+		if sbft.FinalEligibleNextRound[node.ID] {
+			nodeID := node.ID
+			if _, ok := sbft.State.NodeTimers[nodeID]; !ok {
+				sbft.State.NodeTimers[nodeID] = time.AfterFunc(time.Second, func() {
+					sbft.markNodeAsSleepy(nodeID)
+				})
+			} else {
+				sbft.State.NodeTimers[nodeID].Reset(time.Second)
+			}
+		}
+	}
 
 	timestamp := time.Now().Unix()
 	vrfMessage := []byte(strconv.Itoa(sbft.node.ID) + strconv.Itoa(int(timestamp)) + strconv.Itoa(rand.Intn(100)))
