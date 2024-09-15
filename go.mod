@@ -5,6 +5,8 @@ go 1.22.2
 require (
 	github.com/bytemare/secret-sharing v0.2.1
 	github.com/olegabu/go-secp256k1-zkp v0.5.2
+	github.com/stretchr/testify v1.7.0
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
